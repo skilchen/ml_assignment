@@ -1,0 +1,162 @@
+---
+title: "Detect execution quality of weight lifting exercises using machine learning algorithm"
+author: "skilchen"
+date: "Saturday, October 25, 2014"
+output: html_document
+---
+
+##Background
+
+People at http://groupware.les.inf.puc-rio.br/har collected data from accelerometers on the belt, forearm, arm, and dumbbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways. More information is available from the website above (see the section on the Weight Lifting Exercise Dataset). Their detailed study is available from here: [Qualitative Activity Recognition of Weight Lifting Exercises](http://groupware.les.inf.puc-rio.br/work.jsf?p1=11201)
+
+###Overview from the original study
+<table>
+  <tr>
+    <td width="25%">
+      Wearable sensors
+    </td>
+    <td></td>
+  </tr>
+  <tr>
+    <td width="25%">
+      <img src="http://groupware.les.inf.puc-rio.br/static/WLE/on-body-sensing-schema.png" width="80%"/>
+    </td>
+    <td width="75%" valign="top">
+    <p>
+Six young healthy participants were asked to perform one set of 10 repetitions of the Unilateral Dumbbell Biceps Curl in five different fashions: exactly according to the specification (Class A), throwing the elbows to the front (Class B), lifting the dumbbell only halfway (Class C), lowering the dumbbell only halfway (Class D) and throwing the hips to the front (Class E).
+
+They collected data and kindly made them available to the public [here](http://groupware.les.inf.puc-rio.br/static/WLE/WearableComputing_weight_lifting_exercises_biceps_curl_variations.csv).
+
+For the coursera course on practical machine learning the data were preprocessed and split into a training set: 
+https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv  
+and a test set (without the class labels):  
+https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv
+</p>
+    </td>
+  </tr>
+</table>
+
+##Data processing
+###Loading
+First make sure, we have the data files available in the current working directory:
+
+```{r data_processing, cache=TRUE}
+file_names = c("pml-training.csv", "pml-testing.csv")
+for (fn in file_names) {
+    if (!file.exists(fn)) {
+        url = paste("https://d396qusza40orc.cloudfront.net/predmachlearn/",
+                    fn, sep="")
+        destfile = fn
+        download.file(url, destfile, method="curl")
+    }
+}
+```
+
+Now load the data. We have seen that in the coursera version of the data there are empty columns, columns containing "NA" and columns containing "#DIV/0!". We consider that all these are data not available (NA):
+
+```{r load_data, cache=TRUE}
+pml_training <- read.csv("pml-training.csv", 
+                         na.strings=c("NA","","#DIV/0!"))
+dim.training <- dim(pml_training)
+pml_testing <- read.csv("pml-testing.csv",
+                        na.strings=c("NA","","#DIV/0!"))
+dim.testing <- dim(pml_testing)
+```
+In the training data we have `r dim.training[1]` observations with `r dim.training[2]` columns. In the testing data we have `r dim.testing[1]` observations with `r dim.testing[2]` columns.
+
+Both in the training and test data there are many columns which contain mostly NA's. This is due to the fact that the original study authors used a windowing technique to aggregate the data and to compute some additional measurements such as averages, standard deviations, etc. The aggregated data are on rows where the column `new_window` contains "yes". The test data, for which we should predict the activity execution quality class (A-E) contain no such aggregates, so we can't use the aggregates for our prediction task, therefore we remove the rows with `new_window=="yes"` from the training data:
+```{r remove_new_window}
+pml_training <- pml_training[pml_training$new_window=="no",]
+dim(pml_training)
+```
+We can't use NA values for our prediction task, therefore we remove the columns containing NA's from both the training and test data. Those columns are the ones containing the data aggregated per time window.
+```{r remove_na}
+na_columns <- which(colSums(is.na(pml_training)) > 0)
+pml_training <- pml_training[,-na_columns]
+dim(pml_training)
+sum(is.na(pml_training))
+
+pml_testing <- pml_testing[,-na_columns]
+dim(pml_testing)
+sum(is.na(pml_training))
+```
+The first 7 columns in the data are also useless for the prediction task, so we remove them from the training and test data:
+```{r first_seven_cols}
+names(pml_training)[1:7]
+pml_training <- pml_training[,-c(1:7)]
+dim.training.1 <- dim(pml_training)
+pml_testing <- pml_testing[,-c(1:7)]
+```
+After these preprocessing/cleanup steps we have training data with `r dim.training.1[1]` rows and 53 columns. The test data have 20 rows and 53 columns.
+
+
+Now we are ready for the attempt to predict the class of the quality of the activity execution.
+
+##Machine Learning
+Due to the time constraints to complete this assignment, i was unable to explore many different ML-techniques to apply to the given task. From the authors of the original [paper](http://groupware.les.inf.puc-rio.br/work.jsf?p1=11201) i learned, that given the noisy sensor data, they considered a `Random Forest approach` most appropriate. The Random Forest approach has the additional advantage, that cross-validation is built into the algorithm (see: http://www.stat.berkeley.edu/~breiman/RandomForests/cc_home.htm#ooberr). Nonetheless, i will split the given training data further into a training and a test set. My computational resources for this course are very limited, so i couldn't use the `rf` method in the `train()` function from the `caret` package at all. Given these constraints i learned some interesting facts about the data and the prediction task:
+
+1. The Random Forest approach gives incredibly good prediction results for the given prediction task.  
+2. You only need a very small sub-training-set to get acceptable prediction results and small OOB-errors, if you use a reasonable number of trees.  
+
+
+Let's see:
+```{r data_splitting}
+library(caret)
+set.seed(123456)
+inTrain <- createDataPartition(pml_training$classe, p=1/3, list=FALSE)
+training <- pml_training[inTrain,]
+testing  <- pml_training[-inTrain,]
+```
+We get a training set with `r nrow(training)` rows and a testing set with `r nrow(testing)` rows.
+
+###Prediction model
+Now let's build a prediction model:
+```{r prediction_model}
+set.seed(654321)
+library(randomForest)
+modFit.rf <- randomForest(training[,-53], training[,53], ntree=2000)
+print(modFit.rf)
+oob_error <- (1 - mean(modFit.rf$predicted == training$classe)) * 100
+```
+This gives us an OOB-Error of `r oob_error`%. Which is - as usual - too optimistic.
+
+###Cross Validation
+We cross-validate our model on the large test-set of the training data:
+```{r cross_validation}
+pred.testing <- predict(modFit.rf, newdata=testing)
+cm.testing <- confusionMatrix(pred.testing, testing$classe)
+print(cm.testing)
+oob_error <- (1 - mean(pred.testing == testing$classe)) * 100
+```
+Now we have an more realistic estimate of the OOB-Error: `r oob_error`%
+This is still better than what the authors of the original study got with very much higher efforts.
+
+###Prediction Assignment
+Finally, we try to predict the quality class for the given test data in the assignment:
+```{r assignment}
+pred.assignment <- predict(modFit.rf, newdata=pml_testing)
+print(pred.assignment)
+```
+And write the files to submit to the coursera website using the function provided there:
+```{r pml_write_files}
+pml_write_files = function(x) {
+    n = length(x)
+    for(i in 1:n) {
+        filename = paste0("problem_id_",i,".txt")
+        write.table(x[i],file=filename,quote=FALSE,
+                    row.names=FALSE,col.names=FALSE)
+    }
+}
+pml_write_files(pred.assignment)
+```
+##Final remarks
+The prediction results on the provided test data get me a 20/20 score on the coursera website. This is interesting, given the rudimentary modelling that i could do, using my restricted resources. It seems that the test-cases selected by our teachers are rather easy to classify. But for me it is still very hard to see in what way the test-cases are indeed especially typical for the quality classes in the execution of the weight lifting exercises.
+
+###Variable Importance
+The model fit by the Random Forest approach is uninterpretable. But it gives some hints about the importance of the variables to get a prediction of the outcome.
+```{r variable_importance, fig.height=10, fig.width=9}
+varImpPlot(modFit.rf)
+```
+
+Maybe a model with only the most important 14 variables would be good enough.
+<hr/>
