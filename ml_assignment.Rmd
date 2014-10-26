@@ -9,6 +9,8 @@ output: html_document
 
 People at http://groupware.les.inf.puc-rio.br/har collected data from accelerometers on the belt, forearm, arm, and dumbbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways. More information is available from the website above (see the section on the Weight Lifting Exercise Dataset). Their detailed study is available from here: [Qualitative Activity Recognition of Weight Lifting Exercises](http://groupware.les.inf.puc-rio.br/work.jsf?p1=11201)
 
+The goal of our project is to predict the manner in which they did the exercise. This is the "classe" variable in the training set.
+
 ###Overview from the original study
 <table>
   <tr>
@@ -31,6 +33,8 @@ For the coursera course on practical machine learning the data were preprocessed
 https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv  
 and a test set (without the class labels):  
 https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv
+
+We will use the pml-training data to build a model which should be able to correctly predict the quality class label in pml-testing.csv.
 </p>
     </td>
   </tr>
