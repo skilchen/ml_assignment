@@ -61,6 +61,7 @@ if (window.hljs && document.readyState && document.readyState === "complete") {
 <div id="background" class="section level2">
 <h2>Background</h2>
 <p>People at <a href="http://groupware.les.inf.puc-rio.br/har">http://groupware.les.inf.puc-rio.br/har</a> collected data from accelerometers on the belt, forearm, arm, and dumbbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways. More information is available from the website above (see the section on the Weight Lifting Exercise Dataset). Their detailed study is available from here: <a href="http://groupware.les.inf.puc-rio.br/work.jsf?p1=11201">Qualitative Activity Recognition of Weight Lifting Exercises</a></p>
+<p>The goal of our project is to predict the manner in which they did the exercise. This is the “classe” variable in the training set.</p>
 <div id="overview-from-the-original-study" class="section level3">
 <h3>Overview from the original study</h3>
 <table>
@@ -80,7 +81,8 @@ Wearable sensors
     <p>
 <p>Six young healthy participants were asked to perform one set of 10 repetitions of the Unilateral Dumbbell Biceps Curl in five different fashions: exactly according to the specification (Class A), throwing the elbows to the front (Class B), lifting the dumbbell only halfway (Class C), lowering the dumbbell only halfway (Class D) and throwing the hips to the front (Class E).</p>
 <p>They collected data and kindly made them available to the public <a href="http://groupware.les.inf.puc-rio.br/static/WLE/WearableComputing_weight_lifting_exercises_biceps_curl_variations.csv">here</a>.</p>
-For the coursera course on practical machine learning the data were preprocessed and split into a training set: <a href="https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv">https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv</a><br />and a test set (without the class labels):<br /><a href="https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv">https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv</a>
+<p>For the coursera course on practical machine learning the data were preprocessed and split into a training set: <a href="https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv">https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv</a><br />and a test set (without the class labels):<br /><a href="https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv">https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv</a></p>
+We will use the pml-training data to build a model which should be able to correctly predict the quality class label in pml-testing.csv.
 </p>
     </td>
   </tr>
